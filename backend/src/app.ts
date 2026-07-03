@@ -15,7 +15,11 @@ import urlExtranctionRouter from './routes/url';
 import machineTranslationRouter from './routes/machineTranslation';
 
 import dbQuery from './model/db-query';
-import { extractToken, getUserFromToken } from './utils/middleware';
+import {
+  extractToken,
+  getUserFromToken,
+  requireToken,
+} from './utils/middleware';
 
 import { notFoundHandler, generalErrorHandler } from './utils/errorHandlers';
 import { generateOpenAPIDocument } from './openapi/generator';
@@ -64,7 +68,7 @@ app.use('/api/texts', getUserFromToken, textsRouter);
 app.use('/api/translations', getUserFromToken, translationsRouter);
 app.use('/api/words', getUserFromToken, wordsRouter);
 app.use('/api/url', getUserFromToken, urlExtranctionRouter);
-app.use('/api/machinetranslations', getUserFromToken, machineTranslationRouter);
+app.use('/api/machinetranslations', requireToken, machineTranslationRouter);
 
 app.use([notFoundHandler, generalErrorHandler]);
 

@@ -58,7 +58,11 @@ describe('translateWord', () => {
   });
 
   it('returns null when DeepL responds with an error', async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 456 });
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 456,
+      text: async () => 'Quota exceeded',
+    });
 
     const result = await machineTranslation.translateWord('luna', 'es', 'en');
 

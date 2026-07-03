@@ -64,6 +64,30 @@ const isJWTPayload = function (
   return (value as JwtPayload).id !== undefined;
 };
 
+// verifies the JWT without loading the user from the database — for routes
+// that only need to know the caller is authenticated (e.g. machine
+// translation lookups, where the extra DB roundtrip would add latency)
+export const requireToken = function (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!res.locals.token) throw boom.unauthorized('token missing or invalid');
+
+  let decodedToken: string | JwtPayload;
+  try {
+    decodedToken = jwt.verify(res.locals.token, env.SECRET);
+  } catch {
+    throw boom.unauthorized('token missing or invalid');
+  }
+
+  if (!isJWTPayload(decodedToken) || !decodedToken.id) {
+    throw boom.unauthorized('token missing or invalid');
+  }
+
+  next();
+};
+
 export const getUserFromToken = async function (
   _req: Request,
   res: Response,

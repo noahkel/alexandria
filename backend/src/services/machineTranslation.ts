@@ -49,9 +49,15 @@ const translateWord = async function (
       }),
     });
 
-    // quota exceeded or unsupported language pair: not fatal, the client
-    // falls back to other translation sources
-    if (!response.ok) return null;
+    // quota exceeded, invalid key, or unsupported language pair: not fatal,
+    // the client falls back to other translation sources
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      console.error(
+        `DeepL request failed with status ${response.status}: ${body}`
+      );
+      return null;
+    }
 
     const data = (await response.json()) as DeepLResponse;
     const translation = data.translations?.[0]?.text?.trim() || null;
@@ -60,7 +66,8 @@ const translateWord = async function (
     cache.set(cacheKey, translation);
 
     return translation;
-  } catch {
+  } catch (error) {
+    console.error('DeepL request failed:', error);
     return null;
   }
 };
