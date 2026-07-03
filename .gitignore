@@ -33,3 +33,4 @@ requests
 /.firebase
 /.claude
 .env.production.example
+firebase-debug.log
