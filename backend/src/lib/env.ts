@@ -14,6 +14,7 @@ const envSchema = z
       .default('development'),
     RESEND_API_KEY: z.string().optional(),
     SERVER_URL: z.string().optional(),
+    DEEPL_API_KEY: z.string().optional(),
     DATABASE_SSL: z
       .enum(['true', 'false'])
       .default('false')

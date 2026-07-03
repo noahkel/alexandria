@@ -1,0 +1,30 @@
+{
+  "name": "@alexandria/functions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Firebase Cloud Functions wrapper around the Alexandria backend",
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "@alexandria/shared": "file:./shared",
+    "@asteasolutions/zod-to-openapi": "8.4.1",
+    "@hapi/boom": "^10.0.0",
+    "article-parser": "^7.2.4",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "firebase-functions": "^6.4.0",
+    "helmet": "8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.8.0",
+    "pg-format": "^1.0.4",
+    "resend": "^6.9.3",
+    "swagger-ui-express": "5.0.1",
+    "tslib": "^2.4.0",
+    "uuid": "11.1.0",
+    "zod": "4.3.6"
+  }
+}

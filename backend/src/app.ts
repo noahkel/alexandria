@@ -12,6 +12,7 @@ import verifyRouter from './routes/verify';
 import languageRouter from './routes/languages';
 import webdictionariesRouter from './routes/webdictionaries';
 import urlExtranctionRouter from './routes/url';
+import machineTranslationRouter from './routes/machineTranslation';
 
 import dbQuery from './model/db-query';
 import { extractToken, getUserFromToken } from './utils/middleware';
@@ -63,6 +64,7 @@ app.use('/api/texts', getUserFromToken, textsRouter);
 app.use('/api/translations', getUserFromToken, translationsRouter);
 app.use('/api/words', getUserFromToken, wordsRouter);
 app.use('/api/url', getUserFromToken, urlExtranctionRouter);
+app.use('/api/machinetranslations', getUserFromToken, machineTranslationRouter);
 
 app.use([notFoundHandler, generalErrorHandler]);
 

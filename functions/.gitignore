@@ -1,0 +1,4 @@
+node_modules
+# populated by scripts/prepare-functions.mjs on every deploy
+build
+shared

@@ -37,4 +37,6 @@ export {
   UpdateTranslationRequestSchema,
   UpdateWordRequestSchema,
   ExtractUrlRequestSchema,
+  MachineTranslationRequestSchema,
+  MachineTranslationSchema,
 } from './schemas';

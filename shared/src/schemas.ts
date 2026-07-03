@@ -255,3 +255,21 @@ export const ExtractUrlRequestSchema = z
     url: z.url(),
   })
   .meta({ id: 'ExtractUrlRequest' });
+
+// ---------------------------------------------------------------------------
+// Request schemas for machine translation
+// ---------------------------------------------------------------------------
+
+export const MachineTranslationRequestSchema = z
+  .object({
+    word: z.string().min(1).max(500),
+    sourceLanguageId: z.string().min(2).max(4),
+    targetLanguageId: z.string().min(2).max(4),
+  })
+  .meta({ id: 'MachineTranslationRequest' });
+
+export const MachineTranslationSchema = z
+  .object({
+    translation: z.string().nullable(),
+  })
+  .meta({ id: 'MachineTranslation' });

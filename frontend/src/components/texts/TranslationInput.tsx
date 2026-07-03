@@ -1,4 +1,10 @@
-import { ChangeEvent, MouseEvent, useState, Suspense } from 'react';
+import {
+  ChangeEvent,
+  MouseEvent,
+  useEffect,
+  useState,
+  Suspense,
+} from 'react';
 import parseHTML from 'html-react-parser';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useLocation } from 'react-router-dom';
@@ -17,6 +23,7 @@ import { Status } from '../../types';
 
 import wordsService from '../../services/words';
 import translationServices from '../../services/translations';
+import machineTranslationService from '../../services/machineTranslation';
 import shortenContext from '../../utils/shortenContext';
 
 const ChangeStatus = function ({ word }: { word: UserWord | null }) {
@@ -361,6 +368,49 @@ const TranslationComponent = function ({ word }: { word: UserWord | null }) {
     setTranslation(event.target.value);
   };
 
+  const [suggestedTranslation, setSuggestedTranslation] = useState<
+    string | null
+  >(null);
+  const [isLookupPending, setIsLookupPending] = useState(false);
+
+  const sourceLanguageId =
+    location.pathname === '/demo' ? 'es' : currentText?.languageId;
+  const targetLanguageId =
+    location.pathname === '/demo' ? 'en' : user?.knownLanguageId;
+
+  useEffect(() => {
+    let isStale = false;
+    setSuggestedTranslation(null);
+
+    if (currentWord?.word && sourceLanguageId && targetLanguageId) {
+      setIsLookupPending(true);
+
+      machineTranslationService
+        .lookupTranslation(currentWord.word, sourceLanguageId, targetLanguageId)
+        .then((result) => {
+          if (!isStale) {
+            setSuggestedTranslation(result);
+            setIsLookupPending(false);
+          }
+        });
+    } else {
+      setIsLookupPending(false);
+    }
+
+    return () => {
+      isStale = true;
+    };
+  }, [currentWord?.word, sourceLanguageId, targetLanguageId]);
+
+  // hide the suggestion once the user has saved it as their own translation
+  const isSuggestionSaved =
+    suggestedTranslation !== null &&
+    currentWord?.translations?.some(
+      (transObj) =>
+        transObj.translation.toLowerCase() ===
+        suggestedTranslation.toLowerCase()
+    );
+
   const regex = new RegExp(`\\b${currentWord?.word}\\b`, 'gui');
 
   let shortenedContext = '';
@@ -396,6 +446,37 @@ const TranslationComponent = function ({ word }: { word: UserWord | null }) {
                   />
                 ))}
               </>
+            )}
+
+            {(isLookupPending || (suggestedTranslation && !isSuggestionSaved)) && (
+              <div
+                id="suggested-translation"
+                className="flex flex-col gap-1 mb-1"
+              >
+                <p className="block text-sm font-normal text-six">
+                  Suggested translation:
+                </p>
+                {isLookupPending ? (
+                  <p className="italic text-gray-500 dark:text-gray-400 sm:text-sm">
+                    Looking up translation...
+                  </p>
+                ) : (
+                  <button
+                    onClick={(event) =>
+                      handleTranslation(
+                        event,
+                        suggestedTranslation || '',
+                        word
+                      )
+                    }
+                    title="Save this translation"
+                    type={'button'}
+                    className="max-w-fit bg-four hover:bg-sky-600 hover:text-white border border-gray-300 dark:border-gray-600 py-2 px-3 rounded-md sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-sky-500"
+                  >
+                    {suggestedTranslation} +
+                  </button>
+                )}
+              </div>
             )}
 
             <label

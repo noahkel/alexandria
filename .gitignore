@@ -15,6 +15,9 @@ dist
 !.env.vault
 !.env.sample
 !.env.production.example
+# contain no secrets and are required for Firebase deploys
+!functions/.env
+!frontend/.env.production
 
 # backend
 backend/src/model/temp.sql
@@ -27,3 +30,6 @@ yarn-debug.log*
 yarn-error.log*
 requests
 .playwright-mcp
+/.firebase
+/.claude
+.env.production.example

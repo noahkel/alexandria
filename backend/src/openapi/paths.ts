@@ -24,6 +24,8 @@ import {
   UpdateTranslationRequestSchema,
   UpdateWordRequestSchema,
   ExtractUrlRequestSchema,
+  MachineTranslationRequestSchema,
+  MachineTranslationSchema,
 } from '@alexandria/shared';
 
 const bearerAuth = [{ BearerAuth: [] }];
@@ -656,5 +658,31 @@ registry.registerPath({
     204: { description: 'Extraction timed out' },
     400: errorResponse('Could not extract article'),
     401: errorResponse('Not authenticated'),
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Machine translation (requires auth)
+// ---------------------------------------------------------------------------
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/machinetranslations',
+  summary: 'Machine-translate a word or phrase',
+  description:
+    'Translates a word via DeepL. Returns a null translation when DeepL cannot translate the input; responds 501 when no DeepL API key is configured on the server.',
+  tags: ['Machine translation'],
+  security: bearerAuth,
+  request: {
+    query: MachineTranslationRequestSchema,
+  },
+  responses: {
+    200: {
+      description: 'The machine translation, or null if unavailable',
+      content: { 'application/json': { schema: MachineTranslationSchema } },
+    },
+    400: errorResponse('Invalid query parameters'),
+    401: errorResponse('Not authenticated'),
+    501: errorResponse('Machine translation is not configured'),
   },
 });
