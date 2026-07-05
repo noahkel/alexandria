@@ -18,8 +18,8 @@ const getUserwordsInText = async function (
     }
   );
 
-  const userWords: Array<UserWord> = request.data;
-  return userWords;
+  // Guard against non-array responses so callers can't crash on .forEach/.filter.
+  return Array.isArray(request.data) ? (request.data as Array<UserWord>) : [];
 };
 
 const getUserwordsByLanguage = async function (
@@ -31,8 +31,8 @@ const getUserwordsByLanguage = async function (
     headers: { Authorization: `bearer ${token}` },
   });
 
-  const userWords: Array<UserWord> = request.data;
-  return userWords;
+  // Guard against non-array responses so callers can't crash on .forEach/.filter.
+  return Array.isArray(request.data) ? (request.data as Array<UserWord>) : [];
 };
 
 const addWordWithTranslation = async function (word: UserWord) {

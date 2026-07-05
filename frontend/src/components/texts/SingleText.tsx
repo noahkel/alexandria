@@ -28,23 +28,24 @@ const SingleText = function () {
   const [error, setError] = useState('');
   const location = useLocation();
 
-  const fetchUserwords = async function () {
-    if (currentText && user) {
-      const userWordsResponse = await wordsService.getUserwordsInText(
-        String(currentText.id),
-        user.knownLanguageId
-      );
-      setUserWords(userWordsResponse);
-    }
-  };
-
   const fetchTextAndUserwords = async function () {
-    if (params.textId && getToken()) {
-      try {
-        const text = await textsService.getTextById(params.textId);
-        setCurrentText(text);
-        fetchUserwords();
-      } catch (_e) {
+    if (!params.textId || !getToken()) return;
+    try {
+      // Always load the authoritative record — it includes the saved reading
+      // progress — even if a lighter list object already populated currentText
+      // for instant paint.
+      const text = await textsService.getTextById(params.textId);
+      setCurrentText(text);
+      if (user) {
+        const userWordsResponse = await wordsService.getUserwordsInText(
+          String(text.id),
+          user.knownLanguageId
+        );
+        setUserWords(userWordsResponse);
+      }
+    } catch (_e) {
+      // Keep a usable pre-set text on a transient refresh failure.
+      if (!currentText || Number(currentText.id) !== Number(params.textId)) {
         setError('error');
       }
     }
@@ -62,14 +63,13 @@ const SingleText = function () {
   }, []);
 
   useEffect(() => {
-    if (currentText) {
-      fetchUserwords();
-    } else if (location.pathname === '/demo') {
+    if (location.pathname === '/demo') {
       setUserWords(demoUserWords);
     } else {
       fetchTextAndUserwords();
     }
-  }, [currentText, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.textId, user]);
 
   if (currentText && Number(currentText.id) === Number(params.textId)) {
     return (

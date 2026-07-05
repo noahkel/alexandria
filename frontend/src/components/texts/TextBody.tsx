@@ -22,7 +22,6 @@ import host from '../../services/host';
 
 const DEBOUNCE_SAVE_MS = 1000;
 const DEBOUNCE_RESIZE_MS = 300;
-const SCROLL_SCAN_DEBOUNCE_MS = 150;
 // Vertical offset (px) applied when mapping scroll position <-> top word, so the
 // "current" word is the one just below the container's top padding.
 const TOP_ANCHOR_OFFSET = 12;
@@ -96,14 +95,17 @@ const TextBody = function ({
 
   // Cache of each word's vertical offset within the scroll content, sorted by top.
   const wordOffsetsRef = useRef<WordOffset[]>([]);
-  // Guards so the initial programmatic restore-scroll isn't saved as progress.
-  const hasRestoredRef = useRef(false);
+  // True once the reader has actually scrolled, so a late position restore
+  // won't yank them away from where they are.
   const userScrolledRef = useRef(false);
+  // True while we programmatically scroll (restoring position), so those scroll
+  // events aren't mistaken for the user scrolling or saved as progress.
+  const isProgrammaticScrollRef = useRef(false);
 
   // Save progress refs/timers
   const pendingProgressRef = useRef<number | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollScanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Rebuild the word-offset cache from the live DOM (positions change on resize).
   const buildOffsetCache = useCallback(() => {
@@ -159,7 +161,14 @@ const TextBody = function ({
         break;
       }
     }
+
+    // Flag this as a programmatic scroll so the scroll handler ignores it.
+    isProgrammaticScrollRef.current = true;
+    if (progScrollTimerRef.current) clearTimeout(progScrollTimerRef.current);
     container.scrollTop = Math.max(0, best.top - TOP_ANCHOR_OFFSET);
+    progScrollTimerRef.current = setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+    }, 120);
   }, []);
 
   // Save reading progress to the server (debounced)
@@ -191,13 +200,13 @@ const TextBody = function ({
       scrollToWordIndex(savedWordIndex);
     }
 
-    // Rebuild once more after fonts/layout settle, then start tracking scroll.
+    // Rebuild once more after fonts/layout settle and restore again in case
+    // reflow shifted positions, unless the reader has already scrolled.
     const settle = setTimeout(() => {
       buildOffsetCache();
       if (!userScrolledRef.current && savedWordIndex > 0) {
         scrollToWordIndex(savedWordIndex);
       }
-      hasRestoredRef.current = true;
     }, 200);
 
     return () => clearTimeout(settle);
@@ -205,19 +214,24 @@ const TextBody = function ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Track scroll → save the top visible word (debounced).
-  const handleScroll = useCallback(() => {
-    userScrolledRef.current = true;
-    if (!hasRestoredRef.current) return;
-
-    if (scrollScanTimerRef.current) {
-      clearTimeout(scrollScanTimerRef.current);
+  // The saved position can arrive after mount (a text opened from the list has
+  // none until its full record loads). Restore to it when it appears, unless
+  // the reader has already started scrolling.
+  useEffect(() => {
+    if (savedWordIndex > 0 && !userScrolledRef.current) {
+      scrollToWordIndex(savedWordIndex);
     }
-    scrollScanTimerRef.current = setTimeout(() => {
-      const container = scrollRef.current;
-      if (!container) return;
-      saveProgress(topWordIndexForScroll(container.scrollTop));
-    }, SCROLL_SCAN_DEBOUNCE_MS);
+  }, [savedWordIndex, scrollToWordIndex]);
+
+  // Track scroll → remember the top visible word and save it (debounced).
+  const handleScroll = useCallback(() => {
+    // Ignore scrolls we triggered ourselves while restoring position.
+    if (isProgrammaticScrollRef.current) return;
+
+    userScrolledRef.current = true;
+    const container = scrollRef.current;
+    if (!container) return;
+    saveProgress(topWordIndexForScroll(container.scrollTop));
   }, [saveProgress, topWordIndexForScroll]);
 
   // Resize handler — rebuild offsets and keep the reader on the same word.
@@ -242,9 +256,10 @@ const TextBody = function ({
     };
   }, [buildOffsetCache, scrollToWordIndex, topWordIndexForScroll]);
 
-  // Flush pending progress on tab close
+  // Persist the latest position immediately on tab close AND on leaving the
+  // reader — SPA navigation unmounts this component before the debounce fires.
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const flushProgress = () => {
       if (pendingProgressRef.current === null || !textId) return;
 
       const token = getToken();
@@ -261,17 +276,20 @@ const TextBody = function ({
         }),
         keepalive: true,
       });
+      pendingProgressRef.current = null;
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('beforeunload', flushProgress);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('beforeunload', flushProgress);
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
-      if (scrollScanTimerRef.current) {
-        clearTimeout(scrollScanTimerRef.current);
+      if (progScrollTimerRef.current) {
+        clearTimeout(progScrollTimerRef.current);
       }
+      // Unmounting (navigating away) — save where we are right now.
+      flushProgress();
     };
   }, [textId]);
 
