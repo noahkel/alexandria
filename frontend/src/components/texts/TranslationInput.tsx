@@ -575,6 +575,20 @@ const TranslationInput = function () {
   const location = useLocation();
   const voices = window.speechSynthesis.getVoices();
 
+  // Briefly ignore pointer events on the mobile overlay right after a word is
+  // selected, so the tap that opened it can't fall through and immediately
+  // trigger a link/button that lands under the finger.
+  const [overlayReady, setOverlayReady] = useState(false);
+  useEffect(() => {
+    if (!currentWord) {
+      setOverlayReady(false);
+      return undefined;
+    }
+    setOverlayReady(false);
+    const timer = setTimeout(() => setOverlayReady(true), 350);
+    return () => clearTimeout(timer);
+  }, [currentWord]);
+
   const isElement = function (
     element: Element | EventTarget
   ): element is Element {
@@ -640,7 +654,7 @@ const TranslationInput = function () {
   if (window.innerWidth > 768) {
     return (
       <>
-        <div className=" col-start-2 flex flex-col w-[368px] col-span-1 ">
+        <div className="col-start-2 flex flex-col w-full min-w-0 col-span-1">
           <div
             id="translation-component"
             className="sticky top-10 bg-tertiary shadow-sm sm:rounded-lg sm:px-6 py-4 "
@@ -697,7 +711,9 @@ const TranslationInput = function () {
         >
           <div
             id="translation-component"
-            className="w-full max-h-full p-4 overflow-scroll pointer-events-auto flex flex-col items-center shadow-lg rounded-lg space-y-4 sm:items-end bg-tertiary"
+            className={`w-full max-h-full p-4 overflow-scroll flex flex-col items-center shadow-lg rounded-lg space-y-4 sm:items-end bg-tertiary ${
+              overlayReady ? 'pointer-events-auto' : 'pointer-events-none'
+            }`}
           >
             <div className="w-full sm:px-4">
               <div className="flex flex-row justify-between items-center">

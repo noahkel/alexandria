@@ -77,7 +77,7 @@ const SingleText = function () {
         key={`text-id:${currentText.id}outer`}
         className="h-[calc(100vh-4rem)] overflow-hidden flex flex-col bg-secondary mx-auto max-w-7xl lg:px-8"
       >
-        <div className="flex-1 min-h-0 grid grid-rows-[1fr] grid-cols-1 md:grid-cols-[1fr_400px] md:gap-8 lg:grid-flow-col-dense">
+        <div className="flex-1 min-h-0 grid grid-rows-[1fr] grid-cols-1 md:grid-cols-[1fr_clamp(240px,30vw,384px)] md:gap-6 lg:gap-8 lg:grid-flow-col-dense">
           <TextBody
             key={`text-id:${currentText.id}unique`}
             title={currentText.title}
@@ -97,7 +97,7 @@ const SingleText = function () {
     return (
       <main className="h-[calc(100vh-4rem)] overflow-hidden flex flex-col mx-auto max-w-7xl lg:px-8">
         <div className="flex-1 min-h-0 bg-secondary">
-          <div className="h-full grid grid-rows-[1fr] grid-cols-1 md:grid-cols-[1fr_400px] md:gap-8 lg:grid-flow-col-dense">
+          <div className="h-full grid grid-rows-[1fr] grid-cols-1 md:grid-cols-[1fr_clamp(240px,30vw,384px)] md:gap-6 lg:gap-8 lg:grid-flow-col-dense">
             <TextBody
               title={demoText.title}
               textBody={demoText.body}

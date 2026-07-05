@@ -1,4 +1,4 @@
-import { TouchEvent, useState } from 'react';
+import { TouchEvent, useRef, useState } from 'react';
 
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { UserWord } from '@alexandria/shared';
@@ -10,6 +10,12 @@ import {
 } from '../../states/recoil-states';
 
 import phraseFromSelection from '../../utils/phraseSelection';
+
+/**
+ * Max distance (px) a finger may travel between touchstart and touchend for the
+ * gesture to still count as a tap rather than a scroll.
+ */
+const TAP_MOVE_THRESHOLD = 10;
 
 /** CSS classes shared between Word/Sentence components and measurement DOM */
 export const WORD_WRAPPER_CLASSES =
@@ -34,7 +40,7 @@ const Word = function ({
   const setCurrentWord = useSetAtom(currentwordState);
   const markedWords = useAtomValue(markedwordsState);
 
-  const [touchStart, setTouchStart] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [isTouch, setIsTouch] = useState(false);
   const [isWordInPhrase, setIsWordInPhrase] = useState(false);
 
@@ -180,15 +186,31 @@ const Word = function ({
         onTouchEnd={(event) => {
           setIsTouch(true);
 
-          if (touchStart === window.scrollY) {
-            if (window.getSelection()?.toString()) {
-              getHighlightedWordOrPhrase();
-            } else {
-              getClickedOnWord(event);
-            }
-            window.getSelection()?.removeAllRanges();
-            window.getSelection()?.empty();
+          // Distinguish a tap from a scroll-drag by how far the finger moved.
+          const start = touchStartRef.current;
+          const touch = event.changedTouches[0];
+          const movedDistance =
+            start && touch
+              ? Math.hypot(touch.clientX - start.x, touch.clientY - start.y)
+              : 0;
+
+          // Movement beyond the threshold means the user was scrolling, not
+          // tapping a word — leave the word untouched.
+          if (movedDistance > TAP_MOVE_THRESHOLD) {
+            return;
           }
+
+          if (window.getSelection()?.toString()) {
+            getHighlightedWordOrPhrase();
+          } else {
+            getClickedOnWord(event);
+            // Suppress the emulated mouse click that a touch generates, so it
+            // can't fall through to a link/button in the translation overlay
+            // that now appears under the finger.
+            event.preventDefault();
+          }
+          window.getSelection()?.removeAllRanges();
+          window.getSelection()?.empty();
         }}
         onMouseUp={(event) => {
           const pointerEvent = event.nativeEvent as PointerEvent | TouchEvent;
@@ -207,7 +229,12 @@ const Word = function ({
           window.getSelection()?.empty();
           setIsTouch(false);
         }}
-        onTouchStart={() => setTouchStart(window.scrollY)}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          touchStartRef.current = touch
+            ? { x: touch.clientX, y: touch.clientY }
+            : null;
+        }}
         onMouseOver={(event) => highlightWordsInPhrases(event.target)}
         className={`${wordClass} ${
           isWordInPhrase
