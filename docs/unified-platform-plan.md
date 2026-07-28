@@ -1,5 +1,15 @@
 # Unified Platform Plan: Merging Alexandria + Anniversary
 
+> **Decision (2026-07-28): Plan B (native/Flutter) was chosen.** The
+> deciding factor is that the platform must later schedule notifications
+> and exact alarms, which only a native app supports well (exact,
+> offline-capable, reboot-surviving alarms are not available to web apps
+> or wrappers with the same reliability). The concrete implementation
+> plan lives in the anniversary repo at `docs/implementation-plan.md`;
+> that repo becomes the platform home, and this repo is ported in as the
+> reader module, then retired after cutover. The comparison below is kept
+> for the record.
+
 Goal: one product that runs as a **website and an Android app**, hosts both
 existing projects as modules, leaves room for future mini-projects, **syncs
 data automatically** between app and website, and can run **computationally
